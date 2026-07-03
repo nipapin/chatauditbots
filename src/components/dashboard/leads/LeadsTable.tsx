@@ -35,7 +35,7 @@ export function LeadsTable({ botId, leads }: { botId: string; leads: Lead[] }) {
               <td>{formatDateTime(lead.capturedAt)}</td>
               <td>
                 <Link
-                  href={`/bots/${botId}/dialogs/${lead.dialogId}`}
+                  href={`/${botId}/dialogs/${lead.dialogId}`}
                   onClick={(e) => e.stopPropagation()}
                   style={{ fontSize: 12, color: "var(--dash-info-fg)", textDecoration: "none" }}
                 >

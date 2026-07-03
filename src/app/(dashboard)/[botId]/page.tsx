@@ -6,5 +6,5 @@ export default async function BotOverviewPage({
   params: Promise<{ botId: string }>;
 }) {
   const { botId } = await params;
-  redirect(`/bots/${botId}/settings`);
+  redirect(`/${botId}/settings`);
 }

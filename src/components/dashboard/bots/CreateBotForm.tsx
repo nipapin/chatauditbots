@@ -19,7 +19,7 @@ export function CreateBotForm() {
         if (!trimmed) return;
         const bot = await createBot(trimmed);
         show(`Бот «${bot.name}» создан`, "success");
-        router.push(`/bots/${bot.id}/settings`);
+        router.push(`/${bot.id}/settings`);
       }}
       style={{ maxWidth: 420 }}
     >

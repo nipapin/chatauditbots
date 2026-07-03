@@ -187,7 +187,7 @@ export function SiteAnalysisFlow() {
         <button
           type="button"
           className="dash-btn dash-btn-primary"
-          onClick={() => router.push(`/bots/${createdBotId}/settings`)}
+          onClick={() => router.push(`/${createdBotId}/settings`)}
         >
           Открыть настройки бота →
         </button>

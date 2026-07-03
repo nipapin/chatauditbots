@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { BASE_PATH } from "@/lib/basePath";
 import type {
   AnalyticsRangeDays,
   AnalyticsSummary,
@@ -57,7 +58,7 @@ const DEFAULT_NOTIFICATION_SETTINGS: Omit<NotificationSettings, "botId"> = {
 };
 
 async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetch(`${BASE_PATH}${url}`, {
     ...options,
     headers: { "Content-Type": "application/json", ...options?.headers },
   });

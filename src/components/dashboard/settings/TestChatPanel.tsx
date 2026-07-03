@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Icon } from "@/components/dashboard/icons/Icon";
+import { BASE_PATH } from "@/lib/basePath";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -36,7 +37,7 @@ export function TestChatPanel({
     setError(null);
 
     try {
-      const res = await fetch("/api/chat", {
+      const res = await fetch(`${BASE_PATH}/api/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ systemPrompt, temperature, maxTokens, messages: nextMessages }),

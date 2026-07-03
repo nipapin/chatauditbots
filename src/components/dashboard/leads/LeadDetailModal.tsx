@@ -46,7 +46,7 @@ export function LeadDetailModal({
         )}
       </div>
       <Link
-        href={`/bots/${botId}/dialogs/${lead.dialogId}`}
+        href={`/${botId}/dialogs/${lead.dialogId}`}
         className="dash-btn"
         style={{ marginTop: 16, width: "100%" }}
       >

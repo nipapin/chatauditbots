@@ -16,7 +16,7 @@ const NAV_ITEMS = [
 
 export function Sidebar({ botId }: { botId: string }) {
   const pathname = usePathname();
-  const base = `/bots/${botId}`;
+  const base = `/${botId}`;
 
   return (
     <div className="dash-sidebar">

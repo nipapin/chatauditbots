@@ -19,7 +19,7 @@ export function DialogDetail({ botId, dialogId }: { botId: string; dialogId: str
   return (
     <div>
       <Link
-        href={`/bots/${botId}/dialogs`}
+        href={`/${botId}/dialogs`}
         style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, marginBottom: 16, textDecoration: "none", color: "var(--dash-text-secondary)" }}
       >
         <Icon name="arrow-left" size={13} />К списку диалогов

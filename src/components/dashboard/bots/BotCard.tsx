@@ -23,7 +23,7 @@ export function BotCard({ bot, dialogCount }: { bot: Bot; dialogCount: number })
         <Avatar name={bot.name} imageUrl={bot.avatarUrl} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <Link
-            href={`/bots/${bot.id}/settings`}
+            href={`/${bot.id}/settings`}
             style={{ fontSize: 14, fontWeight: 500, textDecoration: "none" }}
           >
             {bot.name}
@@ -40,7 +40,7 @@ export function BotCard({ bot, dialogCount }: { bot: Bot; dialogCount: number })
       </div>
 
       <Link
-        href={`/bots/${bot.id}/settings`}
+        href={`/${bot.id}/settings`}
         className="dash-btn"
         style={{ justifyContent: "center", marginTop: "auto" }}
       >

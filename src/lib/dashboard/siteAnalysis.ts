@@ -1,3 +1,5 @@
+import { BASE_PATH } from "@/lib/basePath";
+
 export interface SiteAnalysis {
   hostname: string;
   displayName: string;
@@ -80,7 +82,7 @@ export interface AiSiteCopy {
 
 /** Реальный ИИ-анализ сайта через /api/analyze-site (сервер ходит на сайт и спрашивает Claude). */
 export async function fetchAiSiteCopy(url: string): Promise<AiSiteCopy> {
-  const res = await fetch("/api/analyze-site", {
+  const res = await fetch(`${BASE_PATH}/api/analyze-site`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url }),

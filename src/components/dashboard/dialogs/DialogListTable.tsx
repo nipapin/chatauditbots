@@ -25,7 +25,7 @@ export function DialogListTable({ botId, dialogs }: { botId: string; dialogs: Di
           <tr key={dialog.id}>
             <td>
               <Link
-                href={`/bots/${botId}/dialogs/${dialog.id}`}
+                href={`/${botId}/dialogs/${dialog.id}`}
                 style={{ textDecoration: "none", fontWeight: 500 }}
               >
                 {dialog.visitor?.name || dialog.visitor?.email || dialog.visitor?.phone || "Гость"}
