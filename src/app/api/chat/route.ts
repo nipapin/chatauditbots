@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractText, getAnthropicClient, resolveModel } from "@/lib/server/anthropic";
+import { requireApiUserId } from "@/lib/server/dal";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -14,6 +15,11 @@ interface ChatRequestBody {
 }
 
 export async function POST(req: Request) {
+  const userId = await requireApiUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+  }
+
   let body: ChatRequestBody;
   try {
     body = await req.json();

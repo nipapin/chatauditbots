@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractText, getAnthropicClient, resolveModel } from "@/lib/server/anthropic";
+import { requireApiUserId } from "@/lib/server/dal";
 
 function normalizeHex(raw: string): string | null {
   const value = raw.trim();
@@ -226,6 +227,11 @@ function extractReadableText(html: string): { title: string; description: string
 }
 
 export async function POST(req: Request) {
+  const userId = await requireApiUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Не авторизован" }, { status: 401 });
+  }
+
   let body: { url?: string };
   try {
     body = await req.json();

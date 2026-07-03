@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Icon } from "@/components/dashboard/icons/Icon";
 import { Pill } from "@/components/dashboard/shared/Pill";
+import { logoutAction } from "@/app/actions/auth";
 import type { Bot } from "@/lib/dashboard/types";
 
 const STATUS_LABEL: Record<Bot["status"], string> = {
@@ -32,6 +33,11 @@ export function DashboardHeader({ bot }: { bot?: Bot }) {
           <Pill variant={STATUS_VARIANT[bot.status]}>{STATUS_LABEL[bot.status]}</Pill>
         </>
       )}
+      <form action={logoutAction} style={{ marginLeft: "auto" }}>
+        <button type="submit" className="dash-btn" style={{ height: 28, fontSize: 12 }}>
+          Выйти
+        </button>
+      </form>
     </div>
   );
 }

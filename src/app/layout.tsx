@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import "./theme.css";
-import { DashboardDataProvider } from "@/lib/dashboard/DashboardDataContext";
 import { ToastProvider } from "@/components/dashboard/shared/Toast";
 
 const inter = Inter({
@@ -23,9 +22,7 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${inter.variable} h-full antialiased`}>
       <body className="dash min-h-full flex flex-col">
-        <DashboardDataProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </DashboardDataProvider>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

@@ -41,7 +41,7 @@ export function SiteAnalysisFlow() {
     setWarning(null);
 
     const fallback = analyzeSiteMock(trimmed);
-    const bot = createBot(fallback.name);
+    const bot = await createBot(fallback.name);
     setCreatedBotId(bot.id);
 
     setSteps([

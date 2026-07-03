@@ -1,15 +1,6 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import { generateId } from "./id";
-import {
-  MOCK_BOTS,
-  MOCK_DIALOGS,
-  MOCK_KNOWLEDGE,
-  MOCK_LEADS,
-  MOCK_NOTIFICATION_SETTINGS,
-  MOCK_WIDGET_CONFIGS,
-} from "./mock-data";
 import type {
   AnalyticsRangeDays,
   AnalyticsSummary,
@@ -24,7 +15,7 @@ import type {
 
 interface DashboardDataValue {
   bots: Bot[];
-  createBot: (name: string) => Bot;
+  createBot: (name: string) => Promise<Bot>;
   updateBot: (botId: string, patch: Partial<Bot>) => void;
   deleteBot: (botId: string) => void;
   getBot: (botId: string) => Bot | undefined;
@@ -50,64 +41,72 @@ interface DashboardDataValue {
 
 const DashboardDataContext = createContext<DashboardDataValue | null>(null);
 
-function simulateProcessing(
-  docId: string,
-  setDocs: React.Dispatch<React.SetStateAction<KnowledgeDocument[]>>
-) {
-  setTimeout(() => {
-    setDocs((prev) =>
-      prev.map((doc) => (doc.id === docId ? { ...doc, status: "ready" as DocStatus } : doc))
-    );
-  }, 2200);
+const DEFAULT_WIDGET_CONFIG: Omit<WidgetConfig, "botId" | "companyName"> = {
+  primaryColor: "#3b6d11",
+  accentColor: "#eaf3de",
+  logoUrl: null,
+  position: "bottom-right",
+  buttonSize: "md",
+  buttonStyle: "round",
+  starterPrompts: [],
+};
+
+const DEFAULT_NOTIFICATION_SETTINGS: Omit<NotificationSettings, "botId"> = {
+  emailOnNewLead: false,
+  notifyEmail: "",
+};
+
+async function apiRequest<T>(url: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...options,
+    headers: { "Content-Type": "application/json", ...options?.headers },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.error || `Запрос ${url} завершился с ошибкой ${res.status}`);
+  }
+  return res.json();
 }
 
-export function DashboardDataProvider({ children }: { children: React.ReactNode }) {
-  const [bots, setBots] = useState<Bot[]>(MOCK_BOTS);
-  const [widgetConfigs, setWidgetConfigs] = useState<WidgetConfig[]>(MOCK_WIDGET_CONFIGS);
-  const [knowledge, setKnowledge] = useState<KnowledgeDocument[]>(MOCK_KNOWLEDGE);
-  const [dialogs] = useState<Dialog[]>(MOCK_DIALOGS);
-  const [leads] = useState<Lead[]>(MOCK_LEADS);
+function findDocStatusDoneDelay() {
+  return 2200;
+}
+
+export function DashboardDataProvider({
+  children,
+  initialBots,
+  initialWidgetConfigs,
+  initialKnowledge,
+  initialDialogs,
+  initialLeads,
+  initialNotificationSettings,
+}: {
+  children: React.ReactNode;
+  initialBots: Bot[];
+  initialWidgetConfigs: WidgetConfig[];
+  initialKnowledge: KnowledgeDocument[];
+  initialDialogs: Dialog[];
+  initialLeads: Lead[];
+  initialNotificationSettings: NotificationSettings[];
+}) {
+  const [bots, setBots] = useState<Bot[]>(initialBots);
+  const [widgetConfigs, setWidgetConfigs] = useState<WidgetConfig[]>(initialWidgetConfigs);
+  const [knowledge, setKnowledge] = useState<KnowledgeDocument[]>(initialKnowledge);
+  const [dialogs] = useState<Dialog[]>(initialDialogs);
+  const [leads] = useState<Lead[]>(initialLeads);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings[]>(
-    MOCK_NOTIFICATION_SETTINGS
+    initialNotificationSettings
   );
 
-  const createBot = useCallback((name: string): Bot => {
-    const id = generateId("bot");
-    const now = new Date().toISOString();
-    const bot: Bot = {
-      id,
-      name,
-      avatarUrl: null,
-      status: "draft",
-      createdAt: now,
-      updatedAt: now,
-      welcomeMessage: "Здравствуйте! Чем могу помочь?",
-      systemPrompt: "Ты — вежливый ассистент компании. Отвечай кратко и по делу.",
-      temperature: 0.7,
-      maxTokens: 500,
-      topP: 0.9,
-      messageLimit: 20,
-      planTier: "free",
-    };
+  const createBot = useCallback(async (name: string): Promise<Bot> => {
+    const { bot, widgetConfig, notificationSettings: ns } = await apiRequest<{
+      bot: Bot;
+      widgetConfig: WidgetConfig;
+      notificationSettings: NotificationSettings;
+    }>("/api/bots", { method: "POST", body: JSON.stringify({ name }) });
     setBots((prev) => [bot, ...prev]);
-    setWidgetConfigs((prev) => [
-      ...prev,
-      {
-        botId: id,
-        primaryColor: "#3b6d11",
-        accentColor: "#eaf3de",
-        logoUrl: null,
-        companyName: name,
-        position: "bottom-right",
-        buttonSize: "md",
-        buttonStyle: "round",
-        starterPrompts: [],
-      },
-    ]);
-    setNotificationSettings((prev) => [
-      ...prev,
-      { botId: id, emailOnNewLead: false, notifyEmail: "" },
-    ]);
+    setWidgetConfigs((prev) => [...prev, widgetConfig]);
+    setNotificationSettings((prev) => [...prev, ns]);
     return bot;
   }, []);
 
@@ -117,6 +116,9 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
         bot.id === botId ? { ...bot, ...patch, updatedAt: new Date().toISOString() } : bot
       )
     );
+    apiRequest(`/api/bots/${botId}`, { method: "PATCH", body: JSON.stringify(patch) }).catch((err) =>
+      console.error("Не удалось сохранить бота", err)
+    );
   }, []);
 
   const deleteBot = useCallback((botId: string) => {
@@ -124,6 +126,9 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     setWidgetConfigs((prev) => prev.filter((cfg) => cfg.botId !== botId));
     setKnowledge((prev) => prev.filter((doc) => doc.botId !== botId));
     setNotificationSettings((prev) => prev.filter((s) => s.botId !== botId));
+    apiRequest(`/api/bots/${botId}`, { method: "DELETE" }).catch((err) =>
+      console.error("Не удалось удалить бота", err)
+    );
   }, []);
 
   const getBot = useCallback((botId: string) => bots.find((b) => b.id === botId), [bots]);
@@ -132,17 +137,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     (botId: string): WidgetConfig => {
       const found = widgetConfigs.find((c) => c.botId === botId);
       if (found) return found;
-      return {
-        botId,
-        primaryColor: "#3b6d11",
-        accentColor: "#eaf3de",
-        logoUrl: null,
-        companyName: "",
-        position: "bottom-right",
-        buttonSize: "md",
-        buttonStyle: "round",
-        starterPrompts: [],
-      };
+      return { botId, companyName: "", ...DEFAULT_WIDGET_CONFIG };
     },
     [widgetConfigs]
   );
@@ -151,10 +146,13 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     setWidgetConfigs((prev) => {
       const exists = prev.some((c) => c.botId === botId);
       if (!exists) {
-        return [...prev, { botId, primaryColor: "#3b6d11", accentColor: "#eaf3de", logoUrl: null, companyName: "", position: "bottom-right", buttonSize: "md", buttonStyle: "round", starterPrompts: [], ...patch }];
+        return [...prev, { botId, companyName: "", ...DEFAULT_WIDGET_CONFIG, ...patch }];
       }
       return prev.map((c) => (c.botId === botId ? { ...c, ...patch } : c));
     });
+    apiRequest(`/api/bots/${botId}/widget`, { method: "PATCH", body: JSON.stringify(patch) }).catch((err) =>
+      console.error("Не удалось сохранить внешний вид виджета", err)
+    );
   }, []);
 
   const knowledgeByBot = useCallback(
@@ -162,26 +160,59 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
     [knowledge]
   );
 
-  const addKnowledgeFile = useCallback((botId: string, title: string, sizeBytes: number) => {
-    const id = generateId("doc");
-    setKnowledge((prev) => [
-      { id, botId, sourceType: "file", title, sizeBytes, status: "processing", addedAt: new Date().toISOString() },
-      ...prev,
-    ]);
-    simulateProcessing(id, setKnowledge);
+  const scheduleReady = useCallback((botId: string, docId: string) => {
+    setTimeout(() => {
+      setKnowledge((prev) =>
+        prev.map((doc) => (doc.id === docId ? { ...doc, status: "ready" as DocStatus } : doc))
+      );
+      apiRequest(`/api/bots/${botId}/knowledge/${docId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: "ready" }),
+      }).catch((err) => console.error("Не удалось обновить статус документа", err));
+    }, findDocStatusDoneDelay());
   }, []);
 
-  const addKnowledgeLink = useCallback((botId: string, title: string, url: string) => {
-    const id = generateId("doc");
-    setKnowledge((prev) => [
-      { id, botId, sourceType: "link", title, url, status: "processing", addedAt: new Date().toISOString() },
-      ...prev,
-    ]);
-    simulateProcessing(id, setKnowledge);
-  }, []);
+  const addKnowledgeFile = useCallback(
+    (botId: string, title: string, sizeBytes: number) => {
+      apiRequest<{ document: KnowledgeDocument }>(`/api/bots/${botId}/knowledge`, {
+        method: "POST",
+        body: JSON.stringify({ sourceType: "file", title, sizeBytes }),
+      })
+        .then(({ document }) => {
+          setKnowledge((prev) => [document, ...prev]);
+          scheduleReady(botId, document.id);
+        })
+        .catch((err) => console.error("Не удалось добавить файл", err));
+    },
+    [scheduleReady]
+  );
+
+  const addKnowledgeLink = useCallback(
+    (botId: string, title: string, url: string) => {
+      apiRequest<{ document: KnowledgeDocument }>(`/api/bots/${botId}/knowledge`, {
+        method: "POST",
+        body: JSON.stringify({ sourceType: "link", title, url }),
+      })
+        .then(({ document }) => {
+          setKnowledge((prev) => [document, ...prev]);
+          scheduleReady(botId, document.id);
+        })
+        .catch((err) => console.error("Не удалось добавить ссылку", err));
+    },
+    [scheduleReady]
+  );
 
   const deleteKnowledgeDoc = useCallback((docId: string) => {
-    setKnowledge((prev) => prev.filter((doc) => doc.id !== docId));
+    let botId: string | undefined;
+    setKnowledge((prev) => {
+      botId = prev.find((doc) => doc.id === docId)?.botId;
+      return prev.filter((doc) => doc.id !== docId);
+    });
+    if (botId) {
+      apiRequest(`/api/bots/${botId}/knowledge/${docId}`, { method: "DELETE" }).catch((err) =>
+        console.error("Не удалось удалить документ", err)
+      );
+    }
   }, []);
 
   const dialogsByBot = useCallback(
@@ -204,11 +235,7 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
 
   const notificationSettingsByBot = useCallback(
     (botId: string): NotificationSettings =>
-      notificationSettings.find((s) => s.botId === botId) ?? {
-        botId,
-        emailOnNewLead: false,
-        notifyEmail: "",
-      },
+      notificationSettings.find((s) => s.botId === botId) ?? { botId, ...DEFAULT_NOTIFICATION_SETTINGS },
     [notificationSettings]
   );
 
@@ -217,10 +244,13 @@ export function DashboardDataProvider({ children }: { children: React.ReactNode 
       setNotificationSettings((prev) => {
         const exists = prev.some((s) => s.botId === botId);
         if (!exists) {
-          return [...prev, { botId, emailOnNewLead: false, notifyEmail: "", ...patch }];
+          return [...prev, { botId, ...DEFAULT_NOTIFICATION_SETTINGS, ...patch }];
         }
         return prev.map((s) => (s.botId === botId ? { ...s, ...patch } : s));
       });
+      apiRequest(`/api/bots/${botId}/notifications`, { method: "PATCH", body: JSON.stringify(patch) }).catch(
+        (err) => console.error("Не удалось сохранить настройки уведомлений", err)
+      );
     },
     []
   );

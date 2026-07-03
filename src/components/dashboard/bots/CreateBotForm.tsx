@@ -13,11 +13,11 @@ export function CreateBotForm() {
 
   return (
     <form
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
         const trimmed = name.trim();
         if (!trimmed) return;
-        const bot = createBot(trimmed);
+        const bot = await createBot(trimmed);
         show(`Бот «${bot.name}» создан`, "success");
         router.push(`/bots/${bot.id}/settings`);
       }}

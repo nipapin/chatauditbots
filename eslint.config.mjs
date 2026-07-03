@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Standalone Node/CJS tooling, not part of the Next.js app bundle.
+    "scripts/**",
+    "ecosystem.config.cjs",
   ]),
 ]);
 
