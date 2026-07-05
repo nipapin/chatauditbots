@@ -1,12 +1,25 @@
 import "server-only";
 import { query } from "./db";
-import type { WidgetButtonSize, WidgetButtonStyle, WidgetConfig, WidgetPosition } from "@/lib/dashboard/types";
+import type {
+  WidgetButtonSize,
+  WidgetButtonStyle,
+  WidgetConfig,
+  WidgetPosition,
+  WidgetTheme,
+} from "@/lib/dashboard/types";
 
 interface WidgetConfigRow {
   bot_id: string;
-  primary_color: string;
-  accent_color: string;
-  logo_url: string | null;
+  primary_color_light: string;
+  bot_bubble_color_light: string;
+  user_bubble_color_light: string;
+  background_color_light: string;
+  primary_color_dark: string;
+  bot_bubble_color_dark: string;
+  user_bubble_color_dark: string;
+  background_color_dark: string;
+  theme: string;
+  subtitle: string;
   company_name: string;
   position: string;
   button_size: string;
@@ -17,9 +30,16 @@ interface WidgetConfigRow {
 function rowToWidgetConfig(row: WidgetConfigRow): WidgetConfig {
   return {
     botId: row.bot_id,
-    primaryColor: row.primary_color,
-    accentColor: row.accent_color,
-    logoUrl: row.logo_url,
+    primaryColorLight: row.primary_color_light,
+    botBubbleColorLight: row.bot_bubble_color_light,
+    userBubbleColorLight: row.user_bubble_color_light,
+    backgroundColorLight: row.background_color_light,
+    primaryColorDark: row.primary_color_dark,
+    botBubbleColorDark: row.bot_bubble_color_dark,
+    userBubbleColorDark: row.user_bubble_color_dark,
+    backgroundColorDark: row.background_color_dark,
+    theme: row.theme as WidgetTheme,
+    subtitle: row.subtitle,
     companyName: row.company_name,
     position: row.position as WidgetPosition,
     buttonSize: row.button_size as WidgetButtonSize,
@@ -28,7 +48,7 @@ function rowToWidgetConfig(row: WidgetConfigRow): WidgetConfig {
   };
 }
 
-const WIDGET_SELECT = `wc.bot_id, wc.primary_color, wc.accent_color, wc.logo_url, wc.company_name, wc.position, wc.button_size, wc.button_style, wc.starter_prompts`;
+const WIDGET_SELECT = `wc.bot_id, wc.primary_color_light, wc.bot_bubble_color_light, wc.user_bubble_color_light, wc.background_color_light, wc.primary_color_dark, wc.bot_bubble_color_dark, wc.user_bubble_color_dark, wc.background_color_dark, wc.theme, wc.subtitle, wc.company_name, wc.position, wc.button_size, wc.button_style, wc.starter_prompts`;
 
 export async function listWidgetConfigsForUser(userId: string): Promise<WidgetConfig[]> {
   const { rows } = await query<WidgetConfigRow>(
@@ -42,9 +62,16 @@ export async function listWidgetConfigsForUser(userId: string): Promise<WidgetCo
 }
 
 const PATCHABLE_FIELDS: Record<string, string> = {
-  primaryColor: "primary_color",
-  accentColor: "accent_color",
-  logoUrl: "logo_url",
+  primaryColorLight: "primary_color_light",
+  botBubbleColorLight: "bot_bubble_color_light",
+  userBubbleColorLight: "user_bubble_color_light",
+  backgroundColorLight: "background_color_light",
+  primaryColorDark: "primary_color_dark",
+  botBubbleColorDark: "bot_bubble_color_dark",
+  userBubbleColorDark: "user_bubble_color_dark",
+  backgroundColorDark: "background_color_dark",
+  theme: "theme",
+  subtitle: "subtitle",
   companyName: "company_name",
   position: "position",
   buttonSize: "button_size",

@@ -1,13 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { useActionState } from "react";
 import Link from "next/link";
 import { loginAction, type AuthActionState } from "@/app/actions/auth";
+import { PasswordField } from "./PasswordField";
 
 const initialState: AuthActionState = {};
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, initialState);
+  // Контролируемые поля — иначе React сбрасывает форму после каждого вызова
+  // action (в том числе при ошибке), и введённые данные приходится вводить заново.
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   return (
     <form action={action} className="dash-card" style={{ width: 360 }}>
@@ -20,15 +26,19 @@ export function LoginForm() {
         <label className="dash-label" htmlFor="login-email">
           Email
         </label>
-        <input id="login-email" name="email" type="email" className="dash-input" required autoFocus />
+        <input
+          id="login-email"
+          name="email"
+          type="email"
+          className="dash-input"
+          required
+          autoFocus
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </div>
 
-      <div className="dash-field" style={{ marginBottom: state?.error ? 8 : 20 }}>
-        <label className="dash-label" htmlFor="login-password">
-          Пароль
-        </label>
-        <input id="login-password" name="password" type="password" className="dash-input" required />
-      </div>
+      <PasswordField id="login-password" label="Пароль" value={password} onChange={setPassword} required />
 
       {state?.error && (
         <div style={{ fontSize: 12, color: "var(--dash-danger-fg)", marginBottom: 12 }}>{state.error}</div>

@@ -15,17 +15,29 @@ export interface Bot {
   topP: number;
   messageLimit: number | null;
   planTier: PlanTier;
+  contactEmail: string;
+  contactPhone: string;
+  knowledgeSummary: string | null;
+  knowledgeSummaryUpdatedAt: string | null;
 }
 
 export type WidgetPosition = "bottom-right" | "bottom-left";
 export type WidgetButtonSize = "sm" | "md" | "lg";
 export type WidgetButtonStyle = "round" | "rounded-square" | "pill-with-label";
+export type WidgetTheme = "light" | "dark";
 
 export interface WidgetConfig {
   botId: string;
-  primaryColor: string;
-  accentColor: string;
-  logoUrl: string | null;
+  primaryColorLight: string;
+  botBubbleColorLight: string;
+  userBubbleColorLight: string;
+  backgroundColorLight: string;
+  primaryColorDark: string;
+  botBubbleColorDark: string;
+  userBubbleColorDark: string;
+  backgroundColorDark: string;
+  theme: WidgetTheme;
+  subtitle: string;
   companyName: string;
   position: WidgetPosition;
   buttonSize: WidgetButtonSize;
@@ -34,7 +46,7 @@ export interface WidgetConfig {
 }
 
 export type DocStatus = "processing" | "ready" | "error";
-export type DocSourceType = "file" | "link";
+export type DocSourceType = "file" | "link" | "text";
 
 export interface KnowledgeDocument {
   id: string;
@@ -43,6 +55,7 @@ export interface KnowledgeDocument {
   title: string;
   url?: string;
   sizeBytes?: number;
+  content?: string;
   status: DocStatus;
   errorMessage?: string;
   addedAt: string;
@@ -75,6 +88,8 @@ export interface Dialog {
   messageCount: number;
   durationSec: number | null;
   leadCaptured: boolean;
+  summary: string | null;
+  isMock: boolean;
 }
 
 export interface Lead {

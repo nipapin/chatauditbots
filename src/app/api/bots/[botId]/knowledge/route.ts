@@ -10,14 +10,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ botId: 
   }
   const { botId } = await params;
 
-  let body: { sourceType?: DocSourceType; title?: string; url?: string; sizeBytes?: number };
+  let body: { sourceType?: DocSourceType; title?: string; url?: string; sizeBytes?: number; content?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Некорректный JSON в теле запроса" }, { status: 400 });
   }
 
-  if (body.sourceType !== "file" && body.sourceType !== "link") {
+  if (body.sourceType !== "file" && body.sourceType !== "link" && body.sourceType !== "text") {
     return NextResponse.json({ error: "Некорректный sourceType" }, { status: 400 });
   }
   const title = (body.title || "").trim();
@@ -30,6 +30,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ botId: 
     title,
     url: body.url,
     sizeBytes: body.sizeBytes,
+    content: body.content,
   });
   if (!document) {
     return NextResponse.json({ error: "Бот не найден" }, { status: 404 });

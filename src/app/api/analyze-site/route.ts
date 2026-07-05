@@ -354,7 +354,7 @@ Meta description: ${description || "—"}
       // Реальный цвет сайта, если он объявлен через <meta name="theme-color">.
       // Если сайт его не указывает — null, и клиент использует цвет по хэшу домена как раньше.
       primaryColor: themeColor,
-      accentColor: themeColor ? lightenHex(themeColor) : null,
+      botBubbleColor: themeColor ? lightenHex(themeColor) : null,
       discoveredPages,
     });
   } catch (err) {

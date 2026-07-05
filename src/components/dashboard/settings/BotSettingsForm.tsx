@@ -6,9 +6,7 @@ import { useToast } from "@/components/dashboard/shared/Toast";
 import { ContentBlock } from "@/components/dashboard/shared/ContentBlock";
 import { EmptyState } from "@/components/dashboard/shared/EmptyState";
 import { Avatar } from "@/components/dashboard/shared/Avatar";
-import { GenerationParamsPanel } from "./GenerationParamsPanel";
 import { MessageLimitControl } from "./MessageLimitControl";
-import { TestChatPanel } from "./TestChatPanel";
 import type { Bot } from "@/lib/dashboard/types";
 
 export function BotSettingsForm({ botId }: { botId: string }) {
@@ -23,14 +21,22 @@ export function BotSettingsForm({ botId }: { botId: string }) {
   const patch = (p: Partial<Bot>) => setForm((prev) => (prev ? { ...prev, ...p } : prev));
 
   return (
-    <>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          data.updateBot(botId, form);
-          show("Настройки сохранены", "success");
-        }}
-      >
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        // Отправляем только поля, которые редактируются на этой странице — иначе
+        // устаревший снимок формы может затереть welcomeMessage/contactEmail и
+        // другие поля Bot, отредактированные на других страницах (Внешний вид, База знаний).
+        data.updateBot(botId, {
+          name: form.name,
+          avatarUrl: form.avatarUrl,
+          status: form.status,
+          systemPrompt: form.systemPrompt,
+          messageLimit: form.messageLimit,
+        });
+        show("Настройки сохранены", "success");
+      }}
+    >
       <ContentBlock title="Основное">
         <div style={{ display: "flex", gap: 16, alignItems: "flex-start", marginBottom: 16 }}>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
@@ -79,19 +85,6 @@ export function BotSettingsForm({ botId }: { botId: string }) {
           </div>
         </div>
 
-        <div className="dash-field">
-          <label className="dash-label" htmlFor="welcome-msg">
-            Приветственное сообщение
-          </label>
-          <textarea
-            id="welcome-msg"
-            className="dash-textarea"
-            rows={2}
-            value={form.welcomeMessage}
-            onChange={(e) => patch({ welcomeMessage: e.target.value })}
-          />
-        </div>
-
         <div className="dash-field" style={{ marginBottom: 0 }}>
           <label className="dash-label" htmlFor="system-prompt">
             Системная инструкция (промпт)
@@ -107,15 +100,6 @@ export function BotSettingsForm({ botId }: { botId: string }) {
         </div>
       </ContentBlock>
 
-      <ContentBlock title="Параметры генерации">
-        <GenerationParamsPanel
-          temperature={form.temperature}
-          maxTokens={form.maxTokens}
-          topP={form.topP}
-          onChange={(p) => patch(p)}
-        />
-      </ContentBlock>
-
       <ContentBlock title="Лимиты">
         <MessageLimitControl
           messageLimit={form.messageLimit}
@@ -127,16 +111,6 @@ export function BotSettingsForm({ botId }: { botId: string }) {
       <button type="submit" className="dash-btn dash-btn-primary">
         Сохранить изменения
       </button>
-      </form>
-
-      <ContentBlock title="Тестовый чат">
-        <TestChatPanel
-          systemPrompt={form.systemPrompt}
-          welcomeMessage={form.welcomeMessage}
-          temperature={form.temperature}
-          maxTokens={form.maxTokens}
-        />
-      </ContentBlock>
-    </>
+    </form>
   );
 }

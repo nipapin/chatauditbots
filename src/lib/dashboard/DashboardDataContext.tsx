@@ -25,12 +25,17 @@ interface DashboardDataValue {
   updateWidgetConfig: (botId: string, patch: Partial<WidgetConfig>) => void;
 
   knowledgeByBot: (botId: string) => KnowledgeDocument[];
-  addKnowledgeFile: (botId: string, title: string, sizeBytes: number) => void;
+  addKnowledgeFile: (botId: string, title: string, sizeBytes: number, content?: string) => void;
   addKnowledgeLink: (botId: string, title: string, url: string) => void;
+  addKnowledgeText: (botId: string, title: string, text: string) => void;
   deleteKnowledgeDoc: (docId: string) => void;
+  generateKnowledgeSummary: (botId: string) => Promise<string>;
 
   dialogsByBot: (botId: string) => Dialog[];
   getDialog: (dialogId: string) => Dialog | undefined;
+  generateDialogSummary: (botId: string, dialogId: string) => Promise<string>;
+  seedMockDialogs: (botId: string) => Promise<number>;
+  clearMockDialogs: (botId: string) => Promise<number>;
 
   leadsByBot: (botId: string) => Lead[];
 
@@ -43,9 +48,16 @@ interface DashboardDataValue {
 const DashboardDataContext = createContext<DashboardDataValue | null>(null);
 
 const DEFAULT_WIDGET_CONFIG: Omit<WidgetConfig, "botId" | "companyName"> = {
-  primaryColor: "#3b6d11",
-  accentColor: "#eaf3de",
-  logoUrl: null,
+  primaryColorLight: "#3b6d11",
+  botBubbleColorLight: "#eaf3de",
+  userBubbleColorLight: "#3b6d11",
+  backgroundColorLight: "#ffffff",
+  primaryColorDark: "#3b6d11",
+  botBubbleColorDark: "#2e3a22",
+  userBubbleColorDark: "#3b6d11",
+  backgroundColorDark: "#1c1c1e",
+  theme: "light",
+  subtitle: "Онлайн-чат",
   position: "bottom-right",
   buttonSize: "md",
   buttonStyle: "round",
@@ -93,8 +105,8 @@ export function DashboardDataProvider({
   const [bots, setBots] = useState<Bot[]>(initialBots);
   const [widgetConfigs, setWidgetConfigs] = useState<WidgetConfig[]>(initialWidgetConfigs);
   const [knowledge, setKnowledge] = useState<KnowledgeDocument[]>(initialKnowledge);
-  const [dialogs] = useState<Dialog[]>(initialDialogs);
-  const [leads] = useState<Lead[]>(initialLeads);
+  const [dialogs, setDialogs] = useState<Dialog[]>(initialDialogs);
+  const [leads, setLeads] = useState<Lead[]>(initialLeads);
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings[]>(
     initialNotificationSettings
   );
@@ -174,10 +186,10 @@ export function DashboardDataProvider({
   }, []);
 
   const addKnowledgeFile = useCallback(
-    (botId: string, title: string, sizeBytes: number) => {
+    (botId: string, title: string, sizeBytes: number, content?: string) => {
       apiRequest<{ document: KnowledgeDocument }>(`/api/bots/${botId}/knowledge`, {
         method: "POST",
-        body: JSON.stringify({ sourceType: "file", title, sizeBytes }),
+        body: JSON.stringify({ sourceType: "file", title, sizeBytes, content }),
       })
         .then(({ document }) => {
           setKnowledge((prev) => [document, ...prev]);
@@ -203,6 +215,30 @@ export function DashboardDataProvider({
     [scheduleReady]
   );
 
+  const addKnowledgeText = useCallback(
+    (botId: string, title: string, text: string) => {
+      apiRequest<{ document: KnowledgeDocument }>(`/api/bots/${botId}/knowledge`, {
+        method: "POST",
+        body: JSON.stringify({ sourceType: "text", title, content: text }),
+      })
+        .then(({ document }) => {
+          setKnowledge((prev) => [document, ...prev]);
+          scheduleReady(botId, document.id);
+        })
+        .catch((err) => console.error("Не удалось добавить текст", err));
+    },
+    [scheduleReady]
+  );
+
+  const generateKnowledgeSummary = useCallback(async (botId: string): Promise<string> => {
+    const { knowledgeSummary, knowledgeSummaryUpdatedAt } = await apiRequest<{
+      knowledgeSummary: string;
+      knowledgeSummaryUpdatedAt: string;
+    }>(`/api/bots/${botId}/knowledge/summary`, { method: "POST" });
+    setBots((prev) => prev.map((b) => (b.id === botId ? { ...b, knowledgeSummary, knowledgeSummaryUpdatedAt } : b)));
+    return knowledgeSummary;
+  }, []);
+
   const deleteKnowledgeDoc = useCallback((docId: string) => {
     let botId: string | undefined;
     setKnowledge((prev) => {
@@ -210,6 +246,11 @@ export function DashboardDataProvider({
       return prev.filter((doc) => doc.id !== docId);
     });
     if (botId) {
+      // Резюме базы знаний было построено по документам, которые сейчас есть —
+      // сбрасываем его вместе с удалением, чтобы не показывать устаревший текст как актуальный.
+      setBots((prev) =>
+        prev.map((b) => (b.id === botId ? { ...b, knowledgeSummary: null, knowledgeSummaryUpdatedAt: null } : b))
+      );
       apiRequest(`/api/bots/${botId}/knowledge/${docId}`, { method: "DELETE" }).catch((err) =>
         console.error("Не удалось удалить документ", err)
       );
@@ -225,6 +266,36 @@ export function DashboardDataProvider({
   );
 
   const getDialog = useCallback((dialogId: string) => dialogs.find((d) => d.id === dialogId), [dialogs]);
+
+  const generateDialogSummary = useCallback(async (botId: string, dialogId: string): Promise<string> => {
+    const { summary } = await apiRequest<{ summary: string }>(
+      `/api/bots/${botId}/dialogs/${dialogId}/summary`,
+      { method: "POST" }
+    );
+    setDialogs((prev) => prev.map((d) => (d.id === dialogId ? { ...d, summary } : d)));
+    return summary;
+  }, []);
+
+  const seedMockDialogs = useCallback(async (botId: string): Promise<number> => {
+    const { dialogs: newDialogs, leads: newLeads } = await apiRequest<{ dialogs: Dialog[]; leads: Lead[] }>(
+      `/api/bots/${botId}/dialogs/mock`,
+      { method: "POST" }
+    );
+    setDialogs((prev) => [...newDialogs, ...prev]);
+    setLeads((prev) => [...newLeads, ...prev]);
+    return newDialogs.length;
+  }, []);
+
+  const clearMockDialogs = useCallback(async (botId: string): Promise<number> => {
+    const { deletedDialogIds } = await apiRequest<{ deletedDialogIds: string[] }>(
+      `/api/bots/${botId}/dialogs/mock`,
+      { method: "DELETE" }
+    );
+    const deletedSet = new Set(deletedDialogIds);
+    setDialogs((prev) => prev.filter((d) => !deletedSet.has(d.id)));
+    setLeads((prev) => prev.filter((l) => !deletedSet.has(l.dialogId)));
+    return deletedDialogIds.length;
+  }, []);
 
   const leadsByBot = useCallback(
     (botId: string) =>
@@ -334,9 +405,14 @@ export function DashboardDataProvider({
       knowledgeByBot,
       addKnowledgeFile,
       addKnowledgeLink,
+      addKnowledgeText,
       deleteKnowledgeDoc,
+      generateKnowledgeSummary,
       dialogsByBot,
       getDialog,
+      generateDialogSummary,
+      seedMockDialogs,
+      clearMockDialogs,
       leadsByBot,
       notificationSettingsByBot,
       updateNotificationSettings,
@@ -353,9 +429,14 @@ export function DashboardDataProvider({
       knowledgeByBot,
       addKnowledgeFile,
       addKnowledgeLink,
+      addKnowledgeText,
       deleteKnowledgeDoc,
+      generateKnowledgeSummary,
       dialogsByBot,
       getDialog,
+      generateDialogSummary,
+      seedMockDialogs,
+      clearMockDialogs,
       leadsByBot,
       notificationSettingsByBot,
       updateNotificationSettings,

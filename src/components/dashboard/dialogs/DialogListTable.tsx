@@ -30,6 +30,11 @@ export function DialogListTable({ botId, dialogs }: { botId: string; dialogs: Di
               >
                 {dialog.visitor?.name || dialog.visitor?.email || dialog.visitor?.phone || "Гость"}
               </Link>
+              {dialog.isMock && (
+                <span style={{ marginLeft: 6 }}>
+                  <Pill variant="warning">мокап</Pill>
+                </span>
+              )}
               {dialog.visitor?.location && (
                 <div style={{ fontSize: 11, color: "var(--dash-text-tertiary)" }}>{dialog.visitor.location}</div>
               )}
