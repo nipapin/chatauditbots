@@ -14,6 +14,7 @@ export function WidgetAppearanceForm({ botId }: { botId: string }) {
   const { bot, widgetConfig, data } = useBot(botId);
   const { show } = useToast();
   const [form, setForm] = useState<WidgetConfig | null>(widgetConfig ?? null);
+  const [welcomeMessage, setWelcomeMessage] = useState(bot?.welcomeMessage ?? "");
 
   if (!bot || !form) {
     return <EmptyState title="Бот не найден" description="Возможно, он был удалён." />;
@@ -22,27 +23,32 @@ export function WidgetAppearanceForm({ botId }: { botId: string }) {
   const patch = (p: Partial<WidgetConfig>) => setForm((prev) => (prev ? { ...prev, ...p } : prev));
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 24, alignItems: "start" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", gap: 24, alignItems: "start" }}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           data.updateWidgetConfig(botId, form);
+          data.updateBot(botId, { welcomeMessage });
           show("Внешний вид виджета сохранён", "success");
         }}
       >
-        <ContentBlock title="Цвета и брендинг">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
-            <ColorSwatchPicker
-              label="Основной цвет"
-              value={form.primaryColor}
-              onChange={(primaryColor) => patch({ primaryColor })}
+        <ContentBlock title="Приветствие">
+          <div className="dash-field" style={{ marginBottom: 0 }}>
+            <label className="dash-label" htmlFor="welcome-message">
+              Приветственное сообщение
+            </label>
+            <textarea
+              id="welcome-message"
+              className="dash-textarea"
+              rows={2}
+              value={welcomeMessage}
+              onChange={(e) => setWelcomeMessage(e.target.value)}
             />
-            <ColorSwatchPicker
-              label="Акцентный цвет"
-              value={form.accentColor}
-              onChange={(accentColor) => patch({ accentColor })}
-            />
+            <div className="dash-hint">Первое сообщение, которое посетитель видит в чате.</div>
           </div>
+        </ContentBlock>
+
+        <ContentBlock title="Брендинг">
           <div className="dash-field">
             <label className="dash-label" htmlFor="company-name">
               Название компании
@@ -55,23 +61,85 @@ export function WidgetAppearanceForm({ botId }: { botId: string }) {
             />
           </div>
           <div className="dash-field" style={{ marginBottom: 0 }}>
-            <label className="dash-label" htmlFor="logo-upload">
-              Логотип
+            <label className="dash-label" htmlFor="subtitle">
+              Подзаголовок
             </label>
-            <label className="dash-btn" style={{ display: "inline-flex", cursor: "pointer" }}>
-              {form.logoUrl ? "Заменить файл" : "Загрузить файл"}
-              <input
-                id="logo-upload"
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  patch({ logoUrl: URL.createObjectURL(file) });
-                }}
-              />
+            <input
+              id="subtitle"
+              className="dash-input"
+              placeholder="Онлайн-чат"
+              value={form.subtitle}
+              onChange={(e) => patch({ subtitle: e.target.value })}
+            />
+          </div>
+        </ContentBlock>
+
+        <ContentBlock title="Цвета — светлая тема">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <ColorSwatchPicker
+              label="Основной цвет"
+              value={form.primaryColorLight}
+              onChange={(primaryColorLight) => patch({ primaryColorLight })}
+            />
+            <ColorSwatchPicker
+              label="Пузырь бота"
+              value={form.botBubbleColorLight}
+              onChange={(botBubbleColorLight) => patch({ botBubbleColorLight })}
+            />
+            <ColorSwatchPicker
+              label="Пузырь пользователя"
+              value={form.userBubbleColorLight}
+              onChange={(userBubbleColorLight) => patch({ userBubbleColorLight })}
+            />
+            <ColorSwatchPicker
+              label="Фон чата"
+              value={form.backgroundColorLight}
+              onChange={(backgroundColorLight) => patch({ backgroundColorLight })}
+            />
+          </div>
+        </ContentBlock>
+
+        <ContentBlock title="Цвета — тёмная тема">
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <ColorSwatchPicker
+              label="Основной цвет"
+              value={form.primaryColorDark}
+              onChange={(primaryColorDark) => patch({ primaryColorDark })}
+            />
+            <ColorSwatchPicker
+              label="Пузырь бота"
+              value={form.botBubbleColorDark}
+              onChange={(botBubbleColorDark) => patch({ botBubbleColorDark })}
+            />
+            <ColorSwatchPicker
+              label="Пузырь пользователя"
+              value={form.userBubbleColorDark}
+              onChange={(userBubbleColorDark) => patch({ userBubbleColorDark })}
+            />
+            <ColorSwatchPicker
+              label="Фон чата"
+              value={form.backgroundColorDark}
+              onChange={(backgroundColorDark) => patch({ backgroundColorDark })}
+            />
+          </div>
+        </ContentBlock>
+
+        <ContentBlock title="Тема оформления">
+          <div className="dash-field" style={{ marginBottom: 0 }}>
+            <label className="dash-label" htmlFor="theme">
+              Тема виджета
             </label>
+            <select
+              id="theme"
+              className="dash-select"
+              style={{ maxWidth: 220 }}
+              value={form.theme}
+              onChange={(e) => patch({ theme: e.target.value as WidgetConfig["theme"] })}
+            >
+              <option value="light">Светлая</option>
+              <option value="dark">Тёмная</option>
+            </select>
+            <div className="dash-hint">Определяет, какая из палитр выше используется в виджете.</div>
           </div>
         </ContentBlock>
 
@@ -138,7 +206,7 @@ export function WidgetAppearanceForm({ botId }: { botId: string }) {
 
       <div style={{ position: "sticky", top: 0 }}>
         <div className="dash-content-block-title">Предпросмотр</div>
-        <WidgetPreview config={form} botName={bot.name} />
+        <WidgetPreview config={form} botName={bot.name} welcomeMessage={welcomeMessage} />
       </div>
     </div>
   );

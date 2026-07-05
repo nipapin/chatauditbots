@@ -1,4 +1,5 @@
 import { BASE_PATH } from "@/lib/basePath";
+import type { WidgetConfig } from "./types";
 
 export interface SiteAnalysis {
   hostname: string;
@@ -8,7 +9,7 @@ export interface SiteAnalysis {
   welcomeMessage: string;
   systemPrompt: string;
   primaryColor: string;
-  accentColor: string;
+  botBubbleColor: string;
 }
 
 const PALETTE: { primary: string; accent: string }[] = [
@@ -18,6 +19,47 @@ const PALETTE: { primary: string; accent: string }[] = [
   { primary: "#6c3fa8", accent: "#efe6fb" },
   { primary: "#a32d2d", accent: "#fcebeb" },
 ];
+
+/** Тёмный тон того же цвета — для тёмной темы виджета. */
+function darkenHex(hex: string, amount = 0.7): string {
+  const num = parseInt(hex.slice(1), 16);
+  const mix = (channel: number) => Math.round(channel * (1 - amount));
+  const r = mix((num >> 16) & 0xff);
+  const g = mix((num >> 8) & 0xff);
+  const b = mix(num & 0xff);
+  return `#${[r, g, b].map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/**
+ * Строит полную палитру виджета (4 цвета × светлая/тёмная тема) из одной пары
+ * основной+пузырь-бота цветов — чтобы после анализа сайта не оставались
+ * незаполненными 6 из 8 цветовых полей WidgetConfig на дефолтных значениях.
+ */
+export function deriveFullPalette(
+  primaryColor: string,
+  botBubbleColor: string
+): Pick<
+  WidgetConfig,
+  | "primaryColorLight"
+  | "botBubbleColorLight"
+  | "userBubbleColorLight"
+  | "backgroundColorLight"
+  | "primaryColorDark"
+  | "botBubbleColorDark"
+  | "userBubbleColorDark"
+  | "backgroundColorDark"
+> {
+  return {
+    primaryColorLight: primaryColor,
+    botBubbleColorLight: botBubbleColor,
+    userBubbleColorLight: primaryColor,
+    backgroundColorLight: "#ffffff",
+    primaryColorDark: primaryColor,
+    botBubbleColorDark: darkenHex(botBubbleColor),
+    userBubbleColorDark: primaryColor,
+    backgroundColorDark: "#1c1c1e",
+  };
+}
 
 function hashString(value: string): number {
   let hash = 0;
@@ -56,7 +98,7 @@ export function analyzeSiteMock(rawUrl: string): SiteAnalysis {
     welcomeMessage: `Здравствуйте! Я — виртуальный ассистент сайта ${hostname}. Отвечу на вопросы и помогу выбрать то, что вам нужно.`,
     systemPrompt: `Ты — вежливый консультант сайта ${hostname}. Отвечай кратко и по делу, опирайся на информацию о компании и её товарах или услугах. Если не знаешь точного ответа — предложи оставить контакты для связи с менеджером.`,
     primaryColor: palette.primary,
-    accentColor: palette.accent,
+    botBubbleColor: palette.accent,
   };
 }
 
@@ -75,7 +117,7 @@ export interface AiSiteCopy {
   systemPrompt: string;
   /** Реальный цвет сайта из <meta name="theme-color">, если сайт его объявляет. */
   primaryColor: string | null;
-  accentColor: string | null;
+  botBubbleColor: string | null;
   /** Ссылки на каталог/FAQ/о компании/контакты, найденные на главной странице сайта. */
   discoveredPages: DiscoveredPage[];
 }

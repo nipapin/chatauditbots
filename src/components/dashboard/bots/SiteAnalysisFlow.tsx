@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/dashboard/icons/Icon";
 import { useDashboardData } from "@/lib/dashboard/DashboardDataContext";
 import { useToast } from "@/components/dashboard/shared/Toast";
-import { analyzeSiteMock, fetchAiSiteCopy } from "@/lib/dashboard/siteAnalysis";
+import { analyzeSiteMock, deriveFullPalette, fetchAiSiteCopy } from "@/lib/dashboard/siteAnalysis";
 
 type StepStatus = "pending" | "running" | "done" | "error";
 interface StepState {
@@ -52,7 +52,7 @@ export function SiteAnalysisFlow() {
     ]);
 
     let aiFailed = false;
-    let realColor: { primaryColor: string; accentColor: string } | null = null;
+    let realColor: { primaryColorLight: string; botBubbleColorLight: string } | null = null;
     let addedPages = 0;
 
     try {
@@ -63,8 +63,8 @@ export function SiteAnalysisFlow() {
         name: aiCopy.companyName ? `Ассистент ${aiCopy.companyName}` : fallback.name,
       });
       updateWidgetConfig(bot.id, { companyName: aiCopy.companyName || fallback.companyName });
-      if (aiCopy.primaryColor && aiCopy.accentColor) {
-        realColor = { primaryColor: aiCopy.primaryColor, accentColor: aiCopy.accentColor };
+      if (aiCopy.primaryColor && aiCopy.botBubbleColor) {
+        realColor = { primaryColorLight: aiCopy.primaryColor, botBubbleColorLight: aiCopy.botBubbleColor };
       }
       setStepStatus("analyze", "done");
 
@@ -108,7 +108,8 @@ export function SiteAnalysisFlow() {
       )
     );
     await sleep(500);
-    updateWidgetConfig(bot.id, realColor ?? { primaryColor: fallback.primaryColor, accentColor: fallback.accentColor });
+    const chosen = realColor ?? { primaryColorLight: fallback.primaryColor, botBubbleColorLight: fallback.botBubbleColor };
+    updateWidgetConfig(bot.id, deriveFullPalette(chosen.primaryColorLight, chosen.botBubbleColorLight));
     setStepStatus("style", "done");
     setStepStatus("done", "done");
 

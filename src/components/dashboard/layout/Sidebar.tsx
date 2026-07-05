@@ -10,7 +10,6 @@ const NAV_ITEMS = [
   { href: "knowledge", label: "База знаний", icon: "book-open" },
   { href: "dialogs", label: "Диалоги", icon: "message-circle" },
   { href: "analytics", label: "Аналитика", icon: "bar-chart-2" },
-  { href: "leads", label: "Лиды", icon: "users" },
   { href: "install", label: "Установка", icon: "code" },
 ];
 

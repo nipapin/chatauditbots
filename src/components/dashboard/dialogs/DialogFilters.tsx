@@ -9,14 +9,22 @@ export function DialogFilters({
   onQueryChange,
   filter,
   onFilterChange,
+  dateFrom,
+  onDateFromChange,
+  dateTo,
+  onDateToChange,
 }: {
   query: string;
   onQueryChange: (value: string) => void;
   filter: DialogFilterValue;
   onFilterChange: (value: DialogFilterValue) => void;
+  dateFrom: string;
+  onDateFromChange: (value: string) => void;
+  dateTo: string;
+  onDateToChange: (value: string) => void;
 }) {
   return (
-    <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+    <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
       <div style={{ position: "relative", flex: 1, maxWidth: 320 }}>
         <span style={{ position: "absolute", left: 10, top: 9, color: "var(--dash-text-tertiary)" }}>
           <Icon name="search" size={14} />
@@ -29,6 +37,22 @@ export function DialogFilters({
           onChange={(e) => onQueryChange(e.target.value)}
         />
       </div>
+      <input
+        type="date"
+        className="dash-input"
+        style={{ width: 150 }}
+        value={dateFrom}
+        onChange={(e) => onDateFromChange(e.target.value)}
+        aria-label="Дата с"
+      />
+      <input
+        type="date"
+        className="dash-input"
+        style={{ width: 150 }}
+        value={dateTo}
+        onChange={(e) => onDateToChange(e.target.value)}
+        aria-label="Дата по"
+      />
       <select
         className="dash-select"
         style={{ width: 180 }}
