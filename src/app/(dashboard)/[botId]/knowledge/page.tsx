@@ -7,6 +7,6 @@ export default async function KnowledgePage({
 }) {
   const { botId } = await params;
   // key={botId}: гарантирует полный ремонт формы при переходе на другого бота —
-  // без этого локальный useState-снимок contactEmail/contactPhone может остаться от предыдущего бота.
+  // без этого локальный useState-снимок contacts может остаться от предыдущего бота.
   return <KnowledgeBaseManager key={botId} botId={botId} />;
 }

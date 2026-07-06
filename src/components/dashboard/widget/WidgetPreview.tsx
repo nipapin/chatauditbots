@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/dashboard/icons/Icon";
 import type { WidgetConfig } from "@/lib/dashboard/types";
 
@@ -17,6 +17,7 @@ const BUTTON_SIZE_PX: Record<WidgetConfig["buttonSize"], number> = {
 
 const DEMO_REPLY = "Это демо-ответ — на сайте здесь появится настоящий ответ ИИ-ассистента.";
 const DISCLAIMER = "Отвечает AI-ассистент. Информация в чате не является публичной офертой.";
+const SEED_VISITOR_MESSAGE = "Здравствуйте! Подскажите, пожалуйста...";
 
 interface PreviewMessage {
   id: number;
@@ -54,11 +55,25 @@ export function WidgetPreview({
   // пузыря пользователя, не кликая по подсказкам и не отправляя своё сообщение.
   // Ленивый инициализатор — new Date() считается один раз при монтировании, а не на каждый рендер.
   const [messages, setMessages] = useState<PreviewMessage[]>(() => [
-    { id: -1, role: "visitor", text: "Здравствуйте! Подскажите, пожалуйста...", time: formatTime(new Date()) },
+    { id: -1, role: "visitor", text: SEED_VISITOR_MESSAGE, time: formatTime(new Date()) },
   ]);
   const [draft, setDraft] = useState("");
   const [typing, setTyping] = useState(false);
   const [interacted, setInteracted] = useState(false);
+  const messagesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = messagesRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages, typing, interacted]);
+
+  const resetHistory = useCallback(() => {
+    setMessages([{ id: -1, role: "visitor", text: SEED_VISITOR_MESSAGE, time: formatTime(new Date()) }]);
+    setDraft("");
+    setTyping(false);
+    setInteracted(false);
+  }, []);
 
   const isRight = config.position === "bottom-right";
   const buttonSize = BUTTON_SIZE_PX[config.buttonSize];
@@ -107,8 +122,34 @@ export function WidgetPreview({
         overflow: "hidden",
       }}
     >
-      <div style={{ position: "absolute", top: 12, left: 12, fontSize: 11, color: "var(--dash-text-tertiary)" }}>
-        Предпросмотр сайта клиента
+      <div
+        style={{
+          position: "absolute",
+          top: 12,
+          left: 12,
+          right: 12,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 8,
+        }}
+      >
+        <span style={{ fontSize: 11, color: "var(--dash-text-tertiary)" }}>Предпросмотр сайта клиента</span>
+        <button
+          type="button"
+          onClick={resetHistory}
+          style={{
+            fontSize: 11,
+            color: "var(--dash-text-tertiary)",
+            background: "none",
+            border: "0.5px solid var(--dash-border)",
+            borderRadius: "var(--dash-radius-sm)",
+            padding: "3px 8px",
+            cursor: "pointer",
+          }}
+        >
+          Сбросить историю
+        </button>
       </div>
 
       {isOpen && (
@@ -166,6 +207,7 @@ export function WidgetPreview({
           </div>
 
           <div
+            ref={messagesRef}
             style={{
               background: active.backgroundColor,
               color: surfaceText,

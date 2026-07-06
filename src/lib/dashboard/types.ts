@@ -15,8 +15,7 @@ export interface Bot {
   topP: number;
   messageLimit: number | null;
   planTier: PlanTier;
-  contactEmail: string;
-  contactPhone: string;
+  contacts: string;
   knowledgeSummary: string | null;
   knowledgeSummaryUpdatedAt: string | null;
 }

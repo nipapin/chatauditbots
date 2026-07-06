@@ -17,7 +17,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ botId: 
   }
 
   const docs = await listKnowledgeForBot(userId, botId);
-  if (docs.length === 0 && !bot.contactEmail && !bot.contactPhone) {
+  if (docs.length === 0 && !bot.contacts) {
     return NextResponse.json({ error: "База знаний пуста — нечего суммировать" }, { status: 400 });
   }
 
@@ -28,9 +28,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ botId: 
     })
     .join("\n\n");
 
-  const contactsText = [bot.contactEmail && `Email: ${bot.contactEmail}`, bot.contactPhone && `Телефон: ${bot.contactPhone}`]
-    .filter(Boolean)
-    .join(", ");
+  const contactsText = bot.contacts.trim();
 
   let client;
   try {
