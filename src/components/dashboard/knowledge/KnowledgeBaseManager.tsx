@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useBot } from "@/lib/dashboard/useBot";
 import { useToast } from "@/components/dashboard/shared/Toast";
+import { useDebouncedCallback } from "@/lib/dashboard/useDebouncedCallback";
+import { linkifyText } from "@/lib/dashboard/linkify";
 import { ContentBlock } from "@/components/dashboard/shared/ContentBlock";
 import { EmptyState } from "@/components/dashboard/shared/EmptyState";
 import { Icon } from "@/components/dashboard/icons/Icon";
@@ -10,6 +12,7 @@ import { KnowledgeUploadZone } from "./KnowledgeUploadZone";
 import { AddLinkForm } from "./AddLinkForm";
 import { AddTextForm } from "./AddTextForm";
 import { KnowledgeList } from "./KnowledgeList";
+import type { Bot } from "@/lib/dashboard/types";
 
 const TEXT_MIME_TYPES = ["text/plain", "text/csv", "text/markdown", "application/json"];
 
@@ -25,9 +28,11 @@ async function readFileContent(file: File): Promise<string | undefined> {
 export function KnowledgeBaseManager({ botId }: { botId: string }) {
   const { bot, knowledge, data } = useBot(botId);
   const { show } = useToast();
-  const [contactEmail, setContactEmail] = useState(bot?.contactEmail ?? "");
-  const [contactPhone, setContactPhone] = useState(bot?.contactPhone ?? "");
+  const [contacts, setContacts] = useState(bot?.contacts ?? "");
   const [generatingSummary, setGeneratingSummary] = useState(false);
+  const debouncedUpdateBot = useDebouncedCallback((patch: Partial<Bot>) => {
+    data.updateBot(botId, patch);
+  }, 600);
 
   if (!bot) {
     return <EmptyState title="Бот не найден" description="Возможно, он был удалён." />;
@@ -36,37 +41,35 @@ export function KnowledgeBaseManager({ botId }: { botId: string }) {
   return (
     <>
       <ContentBlock title="Контакты">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          <div className="dash-field" style={{ marginBottom: 0 }}>
-            <label className="dash-label" htmlFor="contact-email">
-              Email
-            </label>
-            <input
-              id="contact-email"
-              className="dash-input"
-              type="email"
-              placeholder="info@company.ru"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              onBlur={() => data.updateBot(botId, { contactEmail })}
-            />
-          </div>
-          <div className="dash-field" style={{ marginBottom: 0 }}>
-            <label className="dash-label" htmlFor="contact-phone">
-              Телефон
-            </label>
-            <input
-              id="contact-phone"
-              className="dash-input"
-              type="tel"
-              placeholder="+7 900 000-00-00"
-              value={contactPhone}
-              onChange={(e) => setContactPhone(e.target.value)}
-              onBlur={() => data.updateBot(botId, { contactPhone })}
-            />
+        <div className="dash-field" style={{ marginBottom: contacts.trim() ? 12 : 0 }}>
+          <label className="dash-label" htmlFor="contacts">
+            Мессенджеры и соцсети
+          </label>
+          <textarea
+            id="contacts"
+            className="dash-textarea"
+            rows={4}
+            placeholder="Укажите телефон, email, мессенджеры и соцсети — по одному способу связи на строку"
+            value={contacts}
+            onChange={(e) => {
+              const value = e.target.value;
+              setContacts(value);
+              debouncedUpdateBot({ contacts: value });
+            }}
+          />
+          <div className="dash-hint">
+            Укажите любые способы связи — ссылки станут кликабельными. Бот предложит эти контакты, если не сможет
+            ответить сам.
           </div>
         </div>
-        <div className="dash-hint">Бот будет предлагать эти контакты, если не сможет ответить сам.</div>
+        {contacts.trim() && (
+          <div className="dash-field" style={{ marginBottom: 0 }}>
+            <label className="dash-label">Как увидит посетитель</label>
+            <div className="dash-card" style={{ fontSize: 13, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+              {linkifyText(contacts)}
+            </div>
+          </div>
+        )}
       </ContentBlock>
 
       <ContentBlock title="Загрузка документов">

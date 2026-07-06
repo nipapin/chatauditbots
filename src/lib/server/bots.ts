@@ -24,8 +24,7 @@ interface BotRow {
   top_p: string | null;
   message_limit: number | null;
   plan_tier: Bot["planTier"];
-  contact_email: string | null;
-  contact_phone: string | null;
+  contacts: string | null;
   knowledge_summary: string | null;
   knowledge_summary_updated_at: Date | null;
 }
@@ -45,8 +44,7 @@ function rowToBot(row: BotRow): Bot {
     topP: row.top_p !== null ? Number(row.top_p) : 0.9,
     messageLimit: row.message_limit,
     planTier: row.plan_tier,
-    contactEmail: row.contact_email ?? "",
-    contactPhone: row.contact_phone ?? "",
+    contacts: row.contacts ?? "",
     knowledgeSummary: row.knowledge_summary,
     knowledgeSummaryUpdatedAt: row.knowledge_summary_updated_at
       ? row.knowledge_summary_updated_at.toISOString()
@@ -54,7 +52,7 @@ function rowToBot(row: BotRow): Bot {
   };
 }
 
-const BOT_COLUMNS = `id, name, avatar_url, status, created_at, updated_at, welcome_message, system_prompt, temperature, max_tokens, top_p, message_limit, plan_tier, contact_email, contact_phone, knowledge_summary, knowledge_summary_updated_at`;
+const BOT_COLUMNS = `id, name, avatar_url, status, created_at, updated_at, welcome_message, system_prompt, temperature, max_tokens, top_p, message_limit, plan_tier, contacts, knowledge_summary, knowledge_summary_updated_at`;
 
 export async function listBotsForUser(userId: string): Promise<Bot[]> {
   const { rows } = await query<BotRow>(
@@ -161,8 +159,7 @@ const PATCHABLE_FIELDS: Record<string, string> = {
   topP: "top_p",
   messageLimit: "message_limit",
   planTier: "plan_tier",
-  contactEmail: "contact_email",
-  contactPhone: "contact_phone",
+  contacts: "contacts",
 };
 
 export async function updateBotForUser(userId: string, botId: string, patch: Partial<Bot>): Promise<Bot | null> {
